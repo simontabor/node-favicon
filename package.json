@@ -1,0 +1,17 @@
+{
+  "author": "Simon Tabor",
+  "name": "favicon",
+  "version": "0.0.0",
+  "repository": {
+    "url": ""
+  },
+  "dependencies": {
+    "request": "~2.14.0",
+    "express": "~3.1.0"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
