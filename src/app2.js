@@ -10,7 +10,7 @@ var redis = require('./redis');
 var ico = require('./ico');
 
 var CACHE_TIME = 600;
-var cache = false;
+var cache = true;
 
 var app = express();
 
