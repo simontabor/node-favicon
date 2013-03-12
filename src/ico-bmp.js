@@ -14,8 +14,6 @@ var pixelData = module.exports = function(buf){
 
   var colorsInPalette = buf.readUInt32LE(32) || 1 << depth;
 
-
-
   var rgbaData;
 
   switch(depth){
@@ -73,6 +71,7 @@ function parse32bit(buf, headerLength, width, height){
   var rgbaData = new Buffer(width * height * 4);
 
   var lineLength = width * 4;
+  while(lineLength % 4) lineLength++;
 
   // BMP renders bottom-to-top, png renders top-to-bottom
   for(var i = 0; i < height; ++i){
@@ -88,6 +87,7 @@ function parse24bit(buf, headerLength, width, height){
   var rgbaData = new Buffer(width * height * 4);
 
   var lineLength = width * 3;
+  while(lineLength % 4) lineLength++;
 
   var rgbPos = 0;
 
@@ -112,6 +112,7 @@ function parse16bit(buf, headerLength, width, height){
   var rgbaData = new Buffer(width * height * 4);
 
   var lineLength = width * 2;
+  while(lineLength % 4) lineLength++;
 
   var rgbPos = 0;
 
@@ -140,6 +141,7 @@ function parse8bit(buf, headerLength, width, height, colorsInPalette){
   var rgbaData = new Buffer(width * height * 4);
 
   var lineLength = width;
+  while(lineLength % 4) lineLength++;
 
   var rgbPos = 0;
 
@@ -165,6 +167,7 @@ function parse4bit(buf, headerLength, width, height, colorsInPalette){
   var rgbaData = new Buffer(width * height * 4);
 
   var lineLength = width / 2;
+  while(lineLength % 4) lineLength++;
 
   var rgbPos = 0;
 

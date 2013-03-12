@@ -8,7 +8,7 @@ if(process.env.REDISTOGO_URL){
   var rtg = require('url').parse(process.env.REDISTOGO_URL);
 
   redisHost = rtg.hostname;
-  redisPort = rtg.post;
+  redisPort = rtg.port;
   redisAuth = rtg.auth.split(':')[1];
 }
 

@@ -107,11 +107,16 @@ function findLink(parsedHtml){
 
 function grabFavicon(theUrl, cb){
   resolve(theUrl, false, function(err, response, resolvedUrl){
+    if(err || !response){
+      return grabFaviconIco(theUrl, cb);
+    }
+
     var handler = new htmlparser.DefaultHandler();
     var parser = new htmlparser.Parser(handler);
     var found = false;
 
     response.on('data', function(data){
+      if(found) return;
       parser.parseChunk(data);
 
       var link = findLink(handler.dom);
@@ -174,7 +179,11 @@ function fetchAndSave(theUrl, urlHash, cb){
       return;
     }
 
-    var icon = ico(icn);
+    try{
+      var icon = ico(icn);
+    }catch(e){
+      return cb(null);
+    }
 
     rm.hmset(urlHash, {
       type: 'ico',
@@ -260,12 +269,14 @@ app.get('/*', function(req, res, next){
 
   fetchViaCache(theUrl, function(icn){
     if(!icn){
+      res.header('Cache-Control', 'public, max-age=60');
       res.header('Content-Type', 'image/png');
       // 1px transparent png
       res.send(new Buffer('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==', 'base64'));
       return;
     }
 
+    res.header('Cache-Control', 'public, max-age=86400');
     res.header('Content-Type', 'image/png');
     res.send(icn);
   });
