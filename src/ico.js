@@ -1,6 +1,8 @@
 var bmp = require('./ico-bmp');
 var png = require('png').Png;
 
+// TODO infer color depth from type
+
 function numImages(buffr){
   if(buffr.readUInt16LE(0) !== 0) throw 'Invalid ICO file';
   if(buffr.readUInt16LE(2) !== 1) throw 'Not an ICO file';
@@ -30,24 +32,34 @@ function parseImages(buffr){
 
     var dataType = imgData.slice(1,4).toString('binary') === 'PNG' ? 'png' : 'bmp';
 
-    img.getPNGData = function(cb){
+    if(dataType === 'bmp' && !img.depth){
+      img.depth = imgData.readUInt16LE(14);
+    }
+
+    img.getPNGData = function(imgData, img){ return function(cb){
       if('png' === dataType){
         process.nextTick(function(){
           cb(imgData);
         });
       }else{
-        var pp = new png(bmp(imgData), img.width, img.height, 'bgra');
+        try{
+          var b = bmp(imgData)
+        }catch(e){
+          console.log(e);
+          return cb(null);
+        }
+        var pp = new png(b, img.width, img.height, 'bgra');
         pp.encode(function(data){
           cb(data);
         });
       }
-    }
+    }}(imgData, img);
 
     images.push(img);
   }
 
   return images.sort(function(a, b){
-    return a.size > b.size ? 1 : a.size < b.size ? -1 :
+    return a.width > b.width ? 1 : a.width < b.width ? -1 :
            a.depth > b.depth ? 1 :a.depth - b.depth ? -1 : 0;
   })
 }
