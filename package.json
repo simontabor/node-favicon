@@ -8,7 +8,9 @@
   "dependencies": {
     "request": "~2.14.0",
     "express": "~3.1.0",
-    "png": "~2.1.1"
+    "png": "~2.1.1",
+    "redis": "~0.8.2",
+    "hiredis": "~0.1.14"
   },
   "devDependencies": {},
   "optionalDependencies": {},

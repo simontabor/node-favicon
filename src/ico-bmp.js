@@ -19,7 +19,7 @@ var pixelData = module.exports = function(buf){
   // Apply AND mask
   for(var i = 0; i < height; ++i){
     for(var j = 0; j < width; j++){
-      var x = buf[pos + lineLength * height + Math.floor((i * width + j) / 8)] >> (7 - j % 8) & 1;
+      var x = buf[pos + lineLength * height + ((i * width + j) >>> 3)] >> (7 ^ j & 7) & 1;
       rgbaData[lineLength * (height - i - 1) + j * depth / 8 + 3] *= 1-x;
     }
   }

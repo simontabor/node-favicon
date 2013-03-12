@@ -3,7 +3,11 @@ var request = require('request');
 var crypto = require('crypto');
 var url = require('url');
 
+var redis = require('./redis');
+
 var ico = require('./ico');
+
+var CACHE_TIME = 600;
 
 var app = express();
 
@@ -33,14 +37,96 @@ function grabFavicon(theUrl, cb){
   });
 }
 
-function extractPNGData(icoBuffer, cb){
-  var icon = ico(icoBuffer);
+function fetchAndSave(theUrl, urlHash, cb){
+  grabFavicon(theUrl, function(err, icn){
+    if(err || !icn){
+      // ummmmm....?
+    }
 
-  var img = icon.sort(function(a, b){
-    return a.size > b.size ? 1 : a.size < b.size ? -1 : a.depth > b.depth ? 1 : a.depth - b.depth ? -1 : 0
-  }).pop();
+    var rm = redis.multi();
 
-  img.getPNGData(cb);
+    if(isPNG(icn)){
+      //todo extract size
+
+      rm.hmset(urlHash, { type: 'png' } /*, callback? */);
+      rm.expire(urlHash, CACHE_TIME);
+      rm.setex(urlHash + ':data', CACHE_TIME * 1.5, icn.toString('base64')); // just in case :)
+      rm.exec();
+
+      cb(icn);
+
+      return;
+    }
+
+    var icon = ico(icn);
+
+    rm.hmset(urlHash, {
+      type: 'ico',
+      sizes: icon.map(function(img){ return [img.width, img.height, img.depth].join('x') }).join(',')
+    });
+    rm.expire(urlHash, CACHE_TIME);
+
+    var l = icon.length;
+    icon.forEach(function(img, i){
+      var size = [img.width, img.height, img.depth].join('x');
+      img.getPNGData(function(pngData){
+        rm.setex(urlHash + ':data-' + size, CACHE_TIME * 1.5, pngData.toString('base64'));
+
+        // TODO don't naively choose the last one, do it properly
+        if(i === icon.length - 1){
+          cb(pngData);
+        }
+
+        if(!--l){
+          rm.exec();
+        }
+      });
+    });
+  })
+}
+
+
+function fetchViaCache(theUrl, cb){
+  var urlHash = md5(theUrl);
+
+  redis.hgetall(urlHash, function(err, data){
+    if(err || !data || !data.type){
+      return fetchAndSave(theUrl, urlHash, cb);
+    }
+
+    var imgType = data.type;
+
+    if(imgType === 'png'){
+      redis.get(urlHash + ':data', function(err, pngData){
+        if(err || !pngData){
+          return fetchAndSave(theUrl, urlHash, cb);
+        }
+
+        cb(new Buffer(pngData, 'base64'));
+      });
+
+      return;
+    }
+
+    if(imgType === 'ico'){
+      var sizes = data.sizes.split(',');
+
+      // TODO intelligent. For now just get the biggest best icon
+      var size = sizes[sizes.length - 1];
+
+      var dims = size.split('x');
+
+      redis.get(urlHash + ':data-' + size, function(err, iconData){
+        if(err || !iconData){
+          return fetchAndSave(theUrl, urlHash, cb);
+        }
+
+        cb(new Buffer(iconData, 'base64'));
+      });
+
+      return;
+    }
+  });
 }
 
 app.get('/favicon.ico', function(req, res, next){
@@ -55,23 +141,13 @@ app.get('/*', function(req, res, next){
 
   // cache n shit
 
-  grabFavicon(theUrl, function(err, icn){
-    if(err){
-      return next(err);
-    }
+  fetchViaCache(theUrl, function(icn){
     if(!icn){
-      res.redirect(defaultIcon);
+      return res.redirect(defaultIcon);
     }
 
-    if(isPNG(icn)){
-      res.header('Content-Type', 'image/png');
-      res.send(icn);
-    }else{
-      extractPNGData(icn, function(pngData){
-        res.header('Content-Type', 'image/png');
-        res.send(pngData);
-      });
-    }
+    res.header('Content-Type', 'image/png');
+    res.send(icn);
   });
 })
 

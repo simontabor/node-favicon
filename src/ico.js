@@ -46,7 +46,10 @@ function parseImages(buffr){
     images.push(img);
   }
 
-  return images;
+  return images.sort(function(a, b){
+    return a.size > b.size ? 1 : a.size < b.size ? -1 :
+           a.depth > b.depth ? 1 :a.depth - b.depth ? -1 : 0;
+  })
 }
 
 
