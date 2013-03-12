@@ -47,9 +47,13 @@ var pixelData = module.exports = function(buf){
 
 // TODO EXTREMELY untested
 function applyAndMask(buf, rgbaData, width, height, position){
+
+  // sometimes the line length is different from expected. Not yet figured out why.
+  var lineLength = 0 | (buf.length - position) / height;
+
   for(var i = 0; i < height; ++i){
     for(var j = 0; j < width; j++){
-      var x = buf[position + ((i * width + j) >>> 3)] >> (7 ^ j & 7) & 1;
+      var x = buf[position + i * lineLength + (j >> 3)] >> (7 ^ j & 7) & 1;
       rgbaData[width * 4 * (height - i - 1) + j * 4 + 3] = 255 * (1-x);
     }
   }

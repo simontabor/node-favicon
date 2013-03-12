@@ -46,7 +46,7 @@ function resolve(reqUrl, saveResponse, cb){
       'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.28 (KHTML, like Gecko) Chrome/26.0.1397.2 Safari/537.28'
     };
 
-    var req = (/https:/.test(reqUrl) ? https : http).get(parsed);
+    var req = (parsed.protocol === 'http:' ? http : https).get(parsed);
 
     req.on('response', function(res){
       if(res.statusCode >= 400){
